@@ -2,7 +2,7 @@ import cv2
 from ultralytics import YOLO, solutions
 
 model = YOLO("./models/best-v2-s20-2.pt")
-cap = cv2.VideoCapture("./sample_videos/sample3.mp4")
+cap = cv2.VideoCapture("./sample_videos/sample4.mp4")
 assert cap.isOpened(), "Error reading video file"
 
 # Define line points
@@ -19,7 +19,7 @@ counter = solutions.ObjectCounter(
 )
 
 # Skip frames configuration
-frame_skip = 10  # Process every 4th frame
+frame_skip = 1  # Process every 4th frame
 frame_count = 0
 
 while cap.isOpened():
