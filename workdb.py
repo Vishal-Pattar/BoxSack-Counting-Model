@@ -1,6 +1,12 @@
 import cv2
 from ultralytics import YOLO, solutions
 from datetime import datetime
+from pymongo import MongoClient
+
+# Connect to MongoDB
+client = MongoClient("mongodb://localhost:27017/")
+db = client['object_detection']  # Database name
+collection = db['logs']  # Collection name
 
 model = YOLO("./models/best-v2-s20-2.pt")
 cap = cv2.VideoCapture("./sample_videos/sample1.mp4")
@@ -22,9 +28,6 @@ counter = solutions.ObjectCounter(
 # Skip frames configuration
 frame_skip = 4  # Process every 4th frame
 frame_count = 0
-
-# File to store logs
-log_file = open('object_logs.txt', 'w')  # Open file in write mode
 
 while cap.isOpened():
     success, frame = cap.read()
@@ -50,11 +53,17 @@ while cap.isOpened():
                 if obj_in > 0 or obj_out > 0:
                     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     obj_id = counter.count_ids
-                    log_entry = f"{timestamp} - ID: {obj_id}, Class: {obj_class}, InCount: {obj_in}, OutCount: {obj_out}"
+                    log_entry = {
+                        "timestamp": timestamp,
+                        "id": obj_id,
+                        "class": obj_class,
+                        "in_count": obj_in,
+                        "out_count": obj_out
+                    }
                     print(log_entry)
 
-                    # Write log entry to file
-                    log_file.write(log_entry + "\n")
+                    # Insert log entry to MongoDB
+                    collection.insert_one(log_entry)
 
     # Display the frame
     frame = counter.start_counting(frame, tracks)
@@ -65,9 +74,7 @@ while cap.isOpened():
         print("Stopping detection.")
         break
 
-# Close log file
-log_file.close()
-print(f"Total In: {counter.in_counts}, Total Out: {counter.out_counts}")
+print(f"Total In: {counter.in_count}, Total Out: {counter.out_count}")
 
 cap.release()
 cv2.destroyAllWindows()
