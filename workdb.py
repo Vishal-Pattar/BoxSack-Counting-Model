@@ -29,6 +29,10 @@ counter = solutions.ObjectCounter(
 frame_skip = 4  # Process every 4th frame
 frame_count = 0
 
+# Initialize previous counts
+previous_in_count = {}
+previous_out_count = {}
+
 while cap.isOpened():
     success, frame = cap.read()
     if not success:
@@ -47,23 +51,30 @@ while cap.isOpened():
     # Check if data is present
     if counter.class_wise_count:
         for obj_class, counts in counter.class_wise_count.items():
-            if 'IN' in counts and 'OUT' in counts:
-                obj_in = counts['IN']
-                obj_out = counts['OUT']
-                if obj_in > 0 or obj_out > 0:
-                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    obj_id = counter.count_ids
-                    log_entry = {
-                        "timestamp": timestamp,
-                        "id": obj_id,
-                        "class": obj_class,
-                        "in_count": obj_in,
-                        "out_count": obj_out
-                    }
-                    print(log_entry)
+            obj_in = counts.get('IN', 0)
+            obj_out = counts.get('OUT', 0)
+            
+            # Compare with previous counts
+            if (previous_in_count.get(obj_class, 0) != obj_in or 
+                previous_out_count.get(obj_class, 0) != obj_out):
+                
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                obj_id = counter.count_ids
+                log_entry = {
+                    "timestamp": timestamp,
+                    "id": obj_id,
+                    "class": obj_class,
+                    "in_count": obj_in,
+                    "out_count": obj_out
+                }
+                print(log_entry)
 
-                    # Insert log entry to MongoDB
-                    collection.insert_one(log_entry)
+                # Insert log entry to MongoDB
+                collection.insert_one(log_entry)
+                
+                # Update previous counts
+                previous_in_count[obj_class] = obj_in
+                previous_out_count[obj_class] = obj_out
 
     # Display the frame
     frame = counter.start_counting(frame, tracks)
@@ -74,7 +85,7 @@ while cap.isOpened():
         print("Stopping detection.")
         break
 
-print(f"Total In: {counter.in_count}, Total Out: {counter.out_count}")
+print(f"Total In: {counter.in_counts}, Total Out: {counter.out_counts}")
 
 cap.release()
 cv2.destroyAllWindows()
