@@ -67,7 +67,7 @@ while cap.isOpened():
                     "in_count": obj_in,
                     "out_count": obj_out
                 }
-                print(log_entry)
+                # print(log_entry)
 
                 # Insert log entry to MongoDB
                 collection.insert_one(log_entry)
@@ -84,8 +84,6 @@ while cap.isOpened():
     if cv2.waitKey(1) & 0xFF == ord('q'):
         print("Stopping detection.")
         break
-
-print(f"Total In: {counter.in_counts}, Total Out: {counter.out_counts}")
 
 cap.release()
 cv2.destroyAllWindows()
